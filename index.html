@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>solid-disco</title>
+    <meta
+      name="description"
+      content="solid-disco — a single-file Finesse UI-inspired audio dashboard for GitHub Pages."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.12/dist/index.global.js"
+      integrity="sha384-LqBwoe0BcnbLWlaQKZjZo/kDoE/3vuU2CKdZ2Qx5LRUCF1sMAkb8j8jQY5QFgg6U"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/lucide@0.542.0/dist/umd/lucide.min.js"
+      integrity="sha384-TNfplqKj5j5vXPfD9WVi9CLTDFI8iOx7+dbb1jRJD4K6phG1lw/MCYz2K/siy0FW"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --canvas: #090d16;
+        --card: rgba(17, 24, 39, 0.82);
+        --card-solid: #111827;
+        --border: #1f2937;
+        --text-primary: #f9fafb;
+        --text-secondary: #9ca3af;
+        --accent: #6366f1;
+        --accent-hover: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+        --backdrop-glow: rgba(99, 102, 241, 0.12);
+        --backdrop-tint: rgba(15, 23, 42, 0.08);
+      }
+
+      html:not(.dark) {
+        color-scheme: light;
+        --canvas: #f8fafc;
+        --card: rgba(255, 255, 255, 0.88);
+        --card-solid: #ffffff;
+        --border: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --backdrop-glow: rgba(99, 102, 241, 0.08);
+        --backdrop-tint: rgba(255, 255, 255, 0.72);
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background:
+          radial-gradient(circle at top, var(--backdrop-glow), transparent 30%),
+          linear-gradient(180deg, var(--backdrop-tint), transparent 25%),
+          var(--canvas);
+        color: var(--text-primary);
+      }
+
+      .glass-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .micro-label {
+        color: var(--text-secondary);
+      }
+
+      .segmented-button[data-active="true"],
+      .fx-toggle[data-active="true"] {
+        background: var(--accent);
+        color: #f8fafc;
+        box-shadow: var(--shadow);
+      }
+
+      .segmented-button[data-active="false"],
+      .fx-toggle[data-active="false"] {
+        color: var(--text-secondary);
+      }
+
+      .slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 6px;
+        border-radius: 9999px;
+        background: linear-gradient(
+          90deg,
+          rgba(99, 102, 241, 0.85) 0%,
+          rgba(79, 70, 229, 0.65) var(--fill, 50%),
+          rgba(100, 116, 139, 0.24) var(--fill, 50%),
+          rgba(100, 116, 139, 0.24) 100%
+        );
+        outline: none;
+      }
+
+      .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 9999px;
+        background: #f8fafc;
+        border: 4px solid var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        cursor: pointer;
+      }
+
+      .slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 9999px;
+        background: #f8fafc;
+        border: 4px solid var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        cursor: pointer;
+      }
+
+      .eq-slider {
+        width: 140px;
+        transform: rotate(-90deg);
+        transform-origin: center;
+      }
+
+      .toast {
+        background: rgba(15, 23, 42, 0.92);
+        color: #f8fafc;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        box-shadow: var(--shadow);
+        animation: toast-in 220ms ease-out;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      html:not(.dark) .toast {
+        background: rgba(255, 255, 255, 0.96);
+        color: #0f172a;
+        border-color: rgba(99, 102, 241, 0.18);
+      }
+
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen font-sans tracking-tight transition-colors duration-300">
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <header class="glass-card mb-6 rounded-xl p-4 shadow-sm">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400">
+              <i data-lucide="audio-waveform" class="h-6 w-6"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-semibold">solid-disco</h1>
+                <span
+                  class="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-400"
+                >
+                  LIVE v1.0
+                </span>
+              </div>
+              <p class="mt-1 text-sm" style="color: var(--text-secondary)">
+                Finesse UI-inspired audio dashboard with live motion controls.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div
+              class="flex rounded-full border p-1 shadow-sm"
+              style="border-color: var(--border); background: rgba(15, 23, 42, 0.18)"
+            >
+              <button class="segmented-button rounded-full px-4 py-2 text-sm font-medium transition" data-preset="Disco" data-active="true" aria-pressed="true">
+                Disco
+              </button>
+              <button class="segmented-button rounded-full px-4 py-2 text-sm font-medium transition" data-preset="Electro" data-active="false" aria-pressed="false">
+                Electro
+              </button>
+              <button class="segmented-button rounded-full px-4 py-2 text-sm font-medium transition" data-preset="Chill" data-active="false" aria-pressed="false">
+                Chill
+              </button>
+            </div>
+
+            <button
+              id="themeToggle"
+              class="glass-card inline-flex items-center justify-center rounded-full p-3 transition hover:scale-[1.02]"
+              type="button"
+              aria-label="Switch to light theme"
+              aria-pressed="true"
+            >
+              <i data-lucide="sun-medium" class="h-4 w-4"></i>
+            </button>
+
+            <button
+              id="exportButton"
+              class="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-slate-50 shadow-[0_0_15px_rgba(99,102,241,0.15)] transition hover:bg-indigo-600"
+              type="button"
+            >
+              <i data-lucide="download" class="h-4 w-4"></i>
+              Export Config
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <section class="space-y-6 xl:col-span-8">
+          <article class="glass-card rounded-xl p-5 shadow-sm">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <p class="micro-label text-[10px] font-semibold uppercase tracking-wider">Visualizer</p>
+                <h2 class="mt-1 text-lg font-semibold">Reactive spectrum stage</h2>
+              </div>
+              <div class="rounded-full border px-3 py-1 text-xs font-medium" style="border-color: var(--border); color: var(--text-secondary)">
+                Real-time preview
+              </div>
+            </div>
+            <div class="rounded-xl border p-3" style="border-color: var(--border); background: rgba(2, 6, 23, 0.28)">
+              <canvas id="visualizer" class="h-[340px] w-full rounded-xl" aria-hidden="true" role="presentation" tabindex="-1"></canvas>
+            </div>
+            <p id="visualizerStatus" class="mt-3 text-xs font-medium" style="color: var(--text-secondary)">
+              Visualizer idle · ready to react to playback and EQ changes
+            </p>
+          </article>
+
+          <article class="glass-card rounded-xl p-5 shadow-sm">
+            <div class="grid gap-5 xl:grid-cols-[auto,1fr]">
+              <div class="flex items-center gap-3">
+                <button
+                  id="playButton"
+                  class="inline-flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500 text-slate-50 shadow-[0_0_15px_rgba(99,102,241,0.15)] transition hover:bg-indigo-600"
+                  type="button"
+                  aria-label="Play"
+                >
+                  <i data-lucide="play" class="h-5 w-5"></i>
+                </button>
+                <div>
+                  <p class="micro-label text-[10px] font-semibold uppercase tracking-wider">Session</p>
+                  <h2 id="trackTitle" class="mt-1 text-lg font-semibold">Neon Cascade</h2>
+                  <p id="trackMeta" class="text-sm" style="color: var(--text-secondary)">Disco preset · Visual engine synced</p>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between text-xs font-medium" style="color: var(--text-secondary)">
+                    <span id="currentTime">00:00</span>
+                    <span id="totalTime">02:48</span>
+                  </div>
+                  <input id="progressSlider" class="slider" type="range" min="0" max="168" value="0" aria-label="Track progress" />
+                </div>
+
+                <div class="grid gap-4 lg:grid-cols-[1fr,auto] lg:items-center">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs font-medium" style="color: var(--text-secondary)">
+                      <span>Volume</span>
+                      <span id="volumeValue">72%</span>
+                    </div>
+                    <input id="volumeSlider" class="slider" type="range" min="0" max="100" value="72" aria-label="Volume" />
+                  </div>
+
+                  <div class="flex flex-wrap gap-3">
+                    <button class="fx-toggle rounded-full border px-4 py-2 text-sm font-medium transition" data-fx="bass" data-active="true" aria-pressed="true" style="border-color: var(--border)">
+                      Bass Boost
+                    </button>
+                    <button class="fx-toggle rounded-full border px-4 py-2 text-sm font-medium transition" data-fx="spatial" data-active="false" aria-pressed="false" style="border-color: var(--border)">
+                      Spatial 3D
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <aside class="space-y-6 xl:col-span-4">
+          <section class="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+            <article class="glass-card rounded-xl p-4 shadow-sm">
+              <p class="micro-label text-[10px] font-semibold uppercase tracking-wider">BPM</p>
+              <div class="mt-3 flex items-end justify-between gap-3">
+                <div>
+                  <div id="bpmMetric" class="text-2xl font-semibold">124</div>
+                  <div class="text-xs" style="color: var(--text-secondary)">Rhythm locked</div>
+                </div>
+                <svg viewBox="0 0 120 36" class="h-9 w-24">
+                  <polyline id="bpmSpark" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                </svg>
+              </div>
+            </article>
+
+            <article class="glass-card rounded-xl p-4 shadow-sm">
+              <p class="micro-label text-[10px] font-semibold uppercase tracking-wider">Frequency Peak</p>
+              <div class="mt-3 flex items-end justify-between gap-3">
+                <div>
+                  <div id="peakMetric" class="text-2xl font-semibold">8.2kHz</div>
+                  <div class="text-xs" style="color: var(--text-secondary)">Upper band response</div>
+                </div>
+                <svg viewBox="0 0 120 36" class="h-9 w-24">
+                  <polyline id="peakSpark" fill="none" stroke="#6366F1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                </svg>
+              </div>
+            </article>
+
+            <article class="glass-card rounded-xl p-4 shadow-sm">
+              <p class="micro-label text-[10px] font-semibold uppercase tracking-wider">Output Level</p>
+              <div class="mt-3 flex items-end justify-between gap-3">
+                <div>
+                  <div id="outputMetric" class="text-2xl font-semibold">72%</div>
+                  <div class="text-xs" style="color: var(--text-secondary)">Master mix</div>
+                </div>
+                <svg viewBox="0 0 120 36" class="h-9 w-24">
+                  <polyline id="outputSpark" fill="none" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                </svg>
+              </div>
+            </article>
+          </section>
+
+          <section class="glass-card rounded-xl p-5 shadow-sm">
+            <div class="mb-5 flex items-center justify-between">
+              <div>
+                <p class="micro-label text-[10px] font-semibold uppercase tracking-wider">Equalizer</p>
+                <h2 class="mt-1 text-lg font-semibold">Precision channels</h2>
+              </div>
+              <div class="rounded-full border px-3 py-1 text-xs font-medium" style="border-color: var(--border); color: var(--text-secondary)">
+                5-band mix
+              </div>
+            </div>
+
+            <div class="grid grid-cols-5 gap-3">
+              <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
+                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">60Hz</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="60Hz" type="range" min="0" max="100" value="78" aria-label="60 hertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+8</span>
+              </label>
+              <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
+                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">230Hz</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="230Hz" type="range" min="0" max="100" value="66" aria-label="230 hertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+4</span>
+              </label>
+              <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
+                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">910Hz</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="910Hz" type="range" min="0" max="100" value="58" aria-label="910 hertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+1</span>
+              </label>
+              <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
+                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">4kHz</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="4kHz" type="range" min="0" max="100" value="62" aria-label="4 kilohertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+3</span>
+              </label>
+              <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
+                <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">14kHz</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="14kHz" type="range" min="0" max="100" value="70" aria-label="14 kilohertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+6</span>
+              </label>
+            </div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div id="toastContainer" class="pointer-events-none fixed bottom-5 right-5 z-50 flex w-full max-w-sm flex-col gap-3 px-4"></div>
+    <div id="liveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <script>
+      const root = document.documentElement;
+      const canvas = document.getElementById("visualizer");
+      const ctx = canvas.getContext("2d");
+      const playButton = document.getElementById("playButton");
+      const progressSlider = document.getElementById("progressSlider");
+      const volumeSlider = document.getElementById("volumeSlider");
+      const themeToggle = document.getElementById("themeToggle");
+      const exportButton = document.getElementById("exportButton");
+      const currentTimeEl = document.getElementById("currentTime");
+      const totalTimeEl = document.getElementById("totalTime");
+      const volumeValueEl = document.getElementById("volumeValue");
+      const bpmMetric = document.getElementById("bpmMetric");
+      const peakMetric = document.getElementById("peakMetric");
+      const outputMetric = document.getElementById("outputMetric");
+      const trackTitle = document.getElementById("trackTitle");
+      const trackMeta = document.getElementById("trackMeta");
+      const visualizerStatus = document.getElementById("visualizerStatus");
+      const toastContainer = document.getElementById("toastContainer");
+      const liveRegion = document.getElementById("liveRegion");
+      const segmentedButtons = Array.from(document.querySelectorAll(".segmented-button"));
+      const fxButtons = Array.from(document.querySelectorAll(".fx-toggle"));
+      const eqSliders = Array.from(document.querySelectorAll(".eq-slider"));
+      const sparkRefs = {
+        bpm: document.getElementById("bpmSpark"),
+        peak: document.getElementById("peakSpark"),
+        output: document.getElementById("outputSpark"),
+      };
+
+      const presets = {
+        Disco: {
+          title: "Neon Cascade",
+          bpm: 124,
+          duration: 168,
+          frequency: 8.2,
+          intensity: 1.05,
+          hue: ["#6366F1", "#10B981", "#F59E0B"],
+          audio: {
+            frequencies: [110, 220, 329.63],
+            waveforms: ["sawtooth", "triangle", "sine"],
+            lowpass: 2800,
+          },
+          eq: { "60Hz": 78, "230Hz": 66, "910Hz": 58, "4kHz": 62, "14kHz": 70 },
+        },
+        Electro: {
+          title: "Static Mirage",
+          bpm: 132,
+          duration: 154,
+          frequency: 10.6,
+          intensity: 1.25,
+          hue: ["#22D3EE", "#6366F1", "#8B5CF6"],
+          audio: {
+            frequencies: [82.41, 164.81, 329.63],
+            waveforms: ["square", "sawtooth", "triangle"],
+            lowpass: 3600,
+          },
+          eq: { "60Hz": 70, "230Hz": 54, "910Hz": 65, "4kHz": 76, "14kHz": 82 },
+        },
+        Chill: {
+          title: "Blue Current",
+          bpm: 96,
+          duration: 196,
+          frequency: 6.4,
+          intensity: 0.78,
+          hue: ["#10B981", "#38BDF8", "#6366F1"],
+          audio: {
+            frequencies: [130.81, 196, 261.63],
+            waveforms: ["sine", "triangle", "sine"],
+            lowpass: 1900,
+          },
+          eq: { "60Hz": 63, "230Hz": 61, "910Hz": 59, "4kHz": 52, "14kHz": 48 },
+        },
+      };
+
+      const state = {
+        playing: false,
+        preset: "Disco",
+        duration: 168,
+        progress: 0,
+        volume: 72,
+        bass: true,
+        spatial: false,
+        eq: { ...presets.Disco.eq },
+        metrics: {
+          bpm: { values: new Array(16), size: 0, cursor: 0, max: 16 },
+          peak: { values: new Array(16), size: 0, cursor: 0, max: 16 },
+          output: { values: new Array(16), size: 0, cursor: 0, max: 16 },
+        },
+      };
+
+      let lastFrame = performance.now();
+      let lastMetricSampleAt = 0;
+      let canvasSize = { width: 0, height: 0, ratio: 1 };
+      const audioState = {
+        context: null,
+        mixGain: null,
+        masterGain: null,
+        bassFilter: null,
+        lowpassFilter: null,
+        panner: null,
+        lfo: null,
+        lfoGain: null,
+        oscillators: [],
+        voiceGains: [],
+        eqFilters: {},
+        pauseTimeout: null,
+      };
+
+      function refreshIcons() {
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+          window.lucide.createIcons();
+        }
+      }
+
+      function renderLucideIcon(target, iconName, className) {
+        const icon = document.createElement("i");
+        icon.dataset.lucide = iconName;
+        icon.className = className;
+        target.replaceChildren(icon);
+      }
+
+      function resizeCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        const { width, height } = canvas.getBoundingClientRect();
+        canvasSize = { width, height, ratio };
+        canvas.width = Math.floor(width * ratio);
+        canvas.height = Math.floor(height * ratio);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+
+      function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainder = Math.floor(seconds % 60);
+        return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+      }
+
+      function formatEqValue(value) {
+        const gain = Math.round((value - 50) / 3);
+        return `${gain >= 0 ? "+" : ""}${gain}`;
+      }
+
+      function updateSliderFill(input) {
+        const min = Number(input.min || 0);
+        const max = Number(input.max || 100);
+        const value = Number(input.value);
+        const fill = ((value - min) / (max - min)) * 100;
+        input.style.setProperty("--fill", `${fill}%`);
+      }
+
+      function createEqFilter(context, type, frequency, q = 1) {
+        const filter = context.createBiquadFilter();
+        filter.type = type;
+        filter.frequency.value = frequency;
+        filter.Q.value = q;
+        return filter;
+      }
+
+      function ensureAudioEngine() {
+        if (audioState.context || !(window.AudioContext || window.webkitAudioContext)) return true;
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const context = new AudioCtx();
+        const mixGain = context.createGain();
+        const bassFilter = createEqFilter(context, "lowshelf", 180, 0.7);
+        const eqFilters = {
+          "60Hz": createEqFilter(context, "peaking", 60, 1.1),
+          "230Hz": createEqFilter(context, "peaking", 230, 1),
+          "910Hz": createEqFilter(context, "peaking", 910, 1),
+          "4kHz": createEqFilter(context, "peaking", 4000, 1),
+          "14kHz": createEqFilter(context, "highshelf", 14000, 0.7),
+        };
+        const lowpassFilter = createEqFilter(context, "lowpass", presets[state.preset].audio.lowpass, 0.8);
+        const panner = context.createStereoPanner();
+        const masterGain = context.createGain();
+        const lfo = context.createOscillator();
+        const lfoGain = context.createGain();
+
+        mixGain.gain.value = 0.85;
+        masterGain.gain.value = 0;
+        panner.pan.value = 0;
+        lfo.type = "sine";
+        lfo.frequency.value = 0.18;
+        lfoGain.gain.value = 0;
+
+        mixGain.connect(bassFilter);
+        bassFilter.connect(eqFilters["60Hz"]);
+        eqFilters["60Hz"].connect(eqFilters["230Hz"]);
+        eqFilters["230Hz"].connect(eqFilters["910Hz"]);
+        eqFilters["910Hz"].connect(eqFilters["4kHz"]);
+        eqFilters["4kHz"].connect(eqFilters["14kHz"]);
+        eqFilters["14kHz"].connect(lowpassFilter);
+        lowpassFilter.connect(panner);
+        panner.connect(masterGain);
+        masterGain.connect(context.destination);
+        lfo.connect(lfoGain);
+        lfoGain.connect(panner.pan);
+
+        const oscillators = [];
+        const voiceGains = [];
+        presets[state.preset].audio.frequencies.forEach((frequency, index) => {
+          const oscillator = context.createOscillator();
+          const voiceGain = context.createGain();
+          oscillator.frequency.value = frequency;
+          oscillator.type = presets[state.preset].audio.waveforms[index] || "sine";
+          voiceGain.gain.value = index === 0 ? 0.08 : index === 1 ? 0.05 : 0.035;
+          oscillator.connect(voiceGain);
+          voiceGain.connect(mixGain);
+          oscillator.start();
+          oscillators.push(oscillator);
+          voiceGains.push(voiceGain);
+        });
+
+        lfo.start();
+
+        Object.assign(audioState, {
+          context,
+          mixGain,
+          masterGain,
+          bassFilter,
+          lowpassFilter,
+          panner,
+          lfo,
+          lfoGain,
+          oscillators,
+          voiceGains,
+          eqFilters,
+        });
+
+        syncAudioSettings(true);
+        return true;
+      }
+
+      function syncAudioSettings(forceResume = false) {
+        if (!audioState.context) return;
+
+        const preset = presets[state.preset];
+        const now = audioState.context.currentTime;
+        const outputGain = Math.max(0.001, (state.volume / 100) * 0.18);
+
+        audioState.bassFilter.gain.setTargetAtTime(state.bass ? 8 : 0, now, 0.08);
+        audioState.lowpassFilter.frequency.setTargetAtTime(
+          preset.audio.lowpass + (state.spatial ? 450 : 0),
+          now,
+          0.12
+        );
+        audioState.lowpassFilter.Q.setTargetAtTime(state.spatial ? 1.1 : 0.8, now, 0.12);
+        audioState.lfo.frequency.setTargetAtTime((preset.bpm / 60) * 0.35, now, 0.2);
+        audioState.lfoGain.gain.setTargetAtTime(state.spatial ? 0.4 : 0, now, 0.16);
+        audioState.masterGain.gain.setTargetAtTime(state.playing ? outputGain : 0.0001, now, state.playing ? 0.08 : 0.05);
+
+        Object.entries(audioState.eqFilters).forEach(([band, filter]) => {
+          const sliderValue = Number(state.eq[band] ?? 50);
+          const gain = (sliderValue - 50) * 0.32;
+          filter.gain.setTargetAtTime(gain, now, 0.12);
+        });
+
+        preset.audio.frequencies.forEach((frequency, index) => {
+          const oscillator = audioState.oscillators[index];
+          if (!oscillator) return;
+          oscillator.type = preset.audio.waveforms[index] || oscillator.type;
+          oscillator.frequency.setTargetAtTime(
+            frequency * (state.spatial && index === 1 ? 1.01 : 1),
+            now,
+            0.12
+          );
+        });
+
+        if ((state.playing || forceResume) && audioState.context.state === "suspended") {
+          audioState.context.resume().catch(() => {});
+        }
+      }
+
+      function updateAudioMotion(timeSeconds) {
+        if (!audioState.context || audioState.context.state !== "running") return;
+        const preset = presets[state.preset];
+        const beat = (preset.bpm / 60) * timeSeconds;
+        const pulse = (Math.sin(beat * Math.PI * 2) + 1) / 2;
+        const eqValues = Object.values(state.eq);
+        const eqAverage = eqValues.reduce((sum, value) => sum + value, 0) / eqValues.length / 100;
+
+        audioState.voiceGains.forEach((voiceGain, index) => {
+          const baseLevel = index === 0 ? 0.07 : index === 1 ? 0.045 : 0.03;
+          const motion = index === 0 ? pulse : index === 1 ? 1 - pulse * 0.35 : 0.65 + Math.sin(timeSeconds * 1.7) * 0.08;
+          const target = (baseLevel + eqAverage * 0.03 + (state.bass && index === 0 ? 0.025 : 0)) * motion;
+          voiceGain.gain.setTargetAtTime(target, audioState.context.currentTime, 0.06);
+        });
+      }
+
+      function handlePlaybackAudio() {
+        if (!ensureAudioEngine()) {
+          showToast("Audio playback is not supported in this browser", true);
+          state.playing = false;
+          updateUI();
+          return;
+        }
+
+        window.clearTimeout(audioState.pauseTimeout);
+        syncAudioSettings(true);
+
+        if (!state.playing) {
+          const pauseAt = audioState.context.currentTime + 0.12;
+          audioState.masterGain.gain.cancelScheduledValues(audioState.context.currentTime);
+          audioState.masterGain.gain.setTargetAtTime(0.0001, audioState.context.currentTime, 0.05);
+          audioState.pauseTimeout = window.setTimeout(() => {
+            if (audioState.context && !state.playing && audioState.context.state === "running") {
+              audioState.context.suspend().catch(() => {});
+            }
+          }, Math.max(80, (pauseAt - audioState.context.currentTime) * 1000));
+        }
+      }
+
+      function showToast(message, announce = false) {
+        const toast = document.createElement("div");
+        toast.className = "toast pointer-events-auto rounded-xl px-4 py-3 text-sm font-medium";
+        toast.textContent = message;
+        toast.setAttribute("aria-hidden", "true");
+        liveRegion.textContent = announce ? message : "";
+        toastContainer.appendChild(toast);
+        window.setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(8px)";
+          toast.style.transition = "opacity 180ms ease, transform 180ms ease";
+        }, 2100);
+        window.setTimeout(() => toast.remove(), 2400);
+      }
+
+      function getMetricSamples(key) {
+        const history = state.metrics[key];
+        if (history.size < history.max) {
+          return history.values.slice(0, history.size);
+        }
+        return history.values.slice(history.cursor).concat(history.values.slice(0, history.cursor));
+      }
+
+      function metricHistoryPush(key, value, max = 16) {
+        const history = state.metrics[key];
+        history.values[history.cursor] = value;
+        history.cursor = (history.cursor + 1) % max;
+        history.size = Math.min(history.size + 1, max);
+      }
+
+      function updateSparklines() {
+        Object.entries(sparkRefs).forEach(([key, node]) => {
+          const points = getMetricSamples(key)
+            .map((value, index, arr) => {
+              const x = (index / Math.max(arr.length - 1, 1)) * 120;
+              const normalized = key === "peak" ? value / 12 : value / 140;
+              const y = 30 - normalized * 22;
+              return `${x},${Math.max(5, Math.min(31, y))}`;
+            })
+            .join(" ");
+          node.setAttribute("points", points);
+        });
+      }
+
+      function computeMetrics(time = performance.now() / 1000) {
+        const preset = presets[state.preset];
+        const eqValues = Object.values(state.eq);
+        const eqAverage = eqValues.reduce((sum, value) => sum + value, 0) / eqValues.length;
+        const bassBonus = state.bass ? 5 : 0;
+        const spatialBonus = state.spatial ? 0.6 : 0;
+        const pulse = state.playing ? Math.sin(time * (preset.intensity * 2.2)) : 0;
+
+        const bpm = Math.round(preset.bpm + bassBonus + pulse * 3);
+        const peak = Math.max(2.4, preset.frequency + spatialBonus + ((eqAverage - 50) / 50) * 2 + pulse * 0.4);
+        const output = Math.max(
+          8,
+          Math.min(100, Math.round(state.volume * 0.68 + eqAverage * 0.24 + (state.playing ? 12 : 0) + pulse * 6))
+        );
+
+        return { bpm, peak, output };
+      }
+
+      function renderMetrics(metrics, recordHistory = false) {
+        bpmMetric.textContent = `${metrics.bpm}`;
+        peakMetric.textContent = `${metrics.peak.toFixed(1)}kHz`;
+        outputMetric.textContent = `${metrics.output}%`;
+
+        if (recordHistory) {
+          metricHistoryPush("bpm", metrics.bpm);
+          metricHistoryPush("peak", metrics.peak);
+          metricHistoryPush("output", metrics.output);
+          updateSparklines();
+        }
+      }
+
+      function updateUI() {
+        const preset = presets[state.preset];
+        currentTimeEl.textContent = formatTime(state.progress);
+        totalTimeEl.textContent = formatTime(state.duration);
+        progressSlider.value = String(state.progress);
+        progressSlider.max = String(state.duration);
+        volumeSlider.value = String(state.volume);
+        volumeValueEl.textContent = `${state.volume}%`;
+        trackTitle.textContent = preset.title;
+        trackMeta.textContent = `${state.preset} preset · Visual engine synced`;
+        visualizerStatus.textContent = state.playing
+          ? `${state.preset} visualizer active · ${state.volume}% output with ${state.bass ? "Bass Boost" : "flat bass"} and ${state.spatial ? "Spatial 3D enabled" : "stereo focus"}`
+          : `Visualizer idle · ${state.preset} preset ready at ${state.volume}% output`;
+        playButton.setAttribute("aria-label", state.playing ? "Pause" : "Play");
+        playButton.setAttribute("aria-pressed", String(state.playing));
+        themeToggle.setAttribute("aria-pressed", String(root.classList.contains("dark")));
+        themeToggle.setAttribute("aria-label", root.classList.contains("dark") ? "Switch to light theme" : "Switch to dark theme");
+        renderLucideIcon(themeToggle, root.classList.contains("dark") ? "sun-medium" : "moon-star", "h-4 w-4");
+        renderLucideIcon(playButton, state.playing ? "pause" : "play", "h-5 w-5");
+
+        segmentedButtons.forEach((button) => {
+          const active = button.dataset.preset === state.preset;
+          button.dataset.active = String(active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+
+        fxButtons.forEach((button) => {
+          const enabled = state[button.dataset.fx];
+          button.dataset.active = String(enabled);
+          button.setAttribute("aria-pressed", String(enabled));
+        });
+
+        eqSliders.forEach((slider) => {
+          slider.value = state.eq[slider.dataset.eq];
+          slider.closest("label").querySelector("[data-eq-value]").textContent = formatEqValue(state.eq[slider.dataset.eq]);
+          updateSliderFill(slider);
+        });
+        updateSliderFill(progressSlider);
+        updateSliderFill(volumeSlider);
+        renderMetrics(computeMetrics(), false);
+        syncAudioSettings();
+        refreshIcons();
+      }
+
+      function applyPreset(name, shouldNotify = true) {
+        const preset = presets[name];
+        if (!preset) return;
+        state.preset = name;
+        state.eq = { ...preset.eq };
+        state.duration = preset.duration;
+        state.progress = Math.min(state.progress, state.duration);
+        updateUI();
+        if (shouldNotify) showToast(`${name} preset applied`, true);
+      }
+
+      function exportConfig() {
+        const payload = JSON.stringify(
+          {
+            theme: root.classList.contains("dark") ? "dark" : "light",
+            preset: state.preset,
+            progress: state.progress,
+            duration: state.duration,
+            volume: state.volume,
+            bass: state.bass,
+            spatial: state.spatial,
+            eq: state.eq,
+          },
+          null,
+          2
+        );
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "solid-disco-config.json";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        window.setTimeout(() => {
+          URL.revokeObjectURL(url);
+          link.remove();
+        }, 0);
+        showToast("Config exported");
+      }
+
+      function drawVisualizer(timestamp) {
+        const time = timestamp / 1000;
+        const { width, height, ratio } = canvasSize;
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        const presetColors = presets[state.preset].hue;
+        gradient.addColorStop(0, presetColors[0]);
+        gradient.addColorStop(0.5, presetColors[1]);
+        gradient.addColorStop(1, presetColors[2]);
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.2)";
+        ctx.fillRect(0, 0, width, height);
+
+        const bars = Math.max(18, Math.floor(width / 18));
+        const gap = 6;
+        const barWidth = Math.max(6, (width - gap * (bars - 1)) / bars);
+        const preset = presets[state.preset];
+        const eqValues = Object.values(state.eq);
+        const eqAverage = eqValues.reduce((sum, value) => sum + value, 0) / eqValues.length;
+        const energy = (state.volume / 100) * preset.intensity * (state.playing ? 1 : 0.22);
+
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = presetColors[0];
+        ctx.fillStyle = gradient;
+
+        for (let index = 0; index < bars; index += 1) {
+          const progress = index / bars;
+          const sine =
+            Math.sin(time * (2.8 + preset.intensity) + index * 0.42) * 0.45 +
+            Math.cos(time * 1.4 + index * 0.18) * 0.3;
+          const bandInfluence = eqValues[index % eqValues.length] / 100;
+          const amplitude = Math.max(
+            14,
+            height * (0.14 + energy * 0.46 + bandInfluence * 0.16 + sine * 0.1 + (eqAverage - 50) / 500)
+          );
+          const x = index * (barWidth + gap);
+          const y = height - amplitude;
+          const radius = Math.min(10, barWidth / 2);
+
+          ctx.beginPath();
+          ctx.moveTo(x, height);
+          ctx.lineTo(x, y + radius);
+          ctx.quadraticCurveTo(x, y, x + radius, y);
+          ctx.lineTo(x + barWidth - radius, y);
+          ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
+          ctx.lineTo(x + barWidth, height);
+          ctx.closePath();
+          ctx.globalAlpha = 0.6 + progress * 0.35;
+          ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(255,255,255,0.08)";
+        ctx.lineWidth = 1;
+        for (let row = 1; row < 5; row += 1) {
+          const y = (height / 5) * row;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+      }
+
+      function animate(timestamp) {
+        const delta = (timestamp - lastFrame) / 1000;
+        lastFrame = timestamp;
+
+        if (state.playing) {
+          state.progress += delta;
+          if (state.progress >= state.duration) state.progress = 0;
+          currentTimeEl.textContent = formatTime(state.progress);
+          progressSlider.value = String(state.progress);
+          updateSliderFill(progressSlider);
+          const shouldSampleMetrics = timestamp - lastMetricSampleAt >= 180;
+          renderMetrics(computeMetrics(timestamp / 1000), shouldSampleMetrics);
+          if (shouldSampleMetrics) lastMetricSampleAt = timestamp;
+          updateAudioMotion(timestamp / 1000);
+        } else if (state.metrics.bpm.size < 2) {
+          renderMetrics(computeMetrics(timestamp / 1000), true);
+          lastMetricSampleAt = timestamp;
+        }
+
+        drawVisualizer(timestamp);
+        requestAnimationFrame(animate);
+      }
+
+      playButton.addEventListener("click", () => {
+        state.playing = !state.playing;
+        handlePlaybackAudio();
+        updateUI();
+        showToast(state.playing ? "Playback started" : "Playback paused", true);
+      });
+
+      progressSlider.addEventListener("input", (event) => {
+        event.target.max = String(state.duration);
+        event.target.value = String(Math.min(Number(event.target.value), state.duration));
+        state.progress = Number(event.target.value);
+        updateUI();
+      });
+
+      volumeSlider.addEventListener("input", (event) => {
+        state.volume = Number(event.target.value);
+        updateSliderFill(event.target);
+        updateUI();
+      });
+
+      segmentedButtons.forEach((button) => {
+        button.addEventListener("click", () => applyPreset(button.dataset.preset));
+      });
+
+      fxButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const key = button.dataset.fx;
+          if (!["bass", "spatial"].includes(key)) return;
+          state[key] = !state[key];
+          updateUI();
+          showToast(`${button.textContent.trim()} ${state[key] ? "enabled" : "disabled"}`, true);
+        });
+      });
+
+      eqSliders.forEach((slider) => {
+        slider.addEventListener("input", (event) => {
+          state.eq[event.target.dataset.eq] = Number(event.target.value);
+          updateSliderFill(event.target);
+          event.target.closest("label").querySelector("[data-eq-value]").textContent = formatEqValue(state.eq[event.target.dataset.eq]);
+          syncAudioSettings();
+          renderMetrics(computeMetrics(), false);
+        });
+      });
+
+      themeToggle.addEventListener("click", () => {
+        root.classList.toggle("dark");
+        updateUI();
+        showToast(`${root.classList.contains("dark") ? "Dark" : "Light"} theme active`, true);
+      });
+
+      exportButton.addEventListener("click", exportConfig);
+      window.addEventListener("resize", resizeCanvas);
+
+      resizeCanvas();
+      applyPreset("Disco", false);
+      progressSlider.max = String(state.duration);
+      updateUI();
+      requestAnimationFrame(animate);
+    </script>
+  </body>
+</html>
