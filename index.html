@@ -248,7 +248,7 @@
                     <span id="currentTime">00:00</span>
                     <span id="totalTime">02:48</span>
                   </div>
-                  <input id="progressSlider" class="slider" type="range" min="0" max="168" value="0" />
+                  <input id="progressSlider" class="slider" type="range" min="0" max="168" value="0" aria-label="Track progress" />
                 </div>
 
                 <div class="grid gap-4 lg:grid-cols-[1fr,auto] lg:items-center">
@@ -257,7 +257,7 @@
                       <span>Volume</span>
                       <span id="volumeValue">72%</span>
                     </div>
-                    <input id="volumeSlider" class="slider" type="range" min="0" max="100" value="72" />
+                    <input id="volumeSlider" class="slider" type="range" min="0" max="100" value="72" aria-label="Volume" />
                   </div>
 
                   <div class="flex flex-wrap gap-3">
@@ -330,27 +330,27 @@
             <div class="grid grid-cols-5 gap-3">
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">60Hz</span>
-                <input class="slider eq-slider" data-eq="60Hz" type="range" min="0" max="100" value="78" />
+                <input class="slider eq-slider" data-eq="60Hz" type="range" min="0" max="100" value="78" aria-label="60 hertz equalizer band" />
                 <span class="text-xs font-medium">+8</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">230Hz</span>
-                <input class="slider eq-slider" data-eq="230Hz" type="range" min="0" max="100" value="66" />
+                <input class="slider eq-slider" data-eq="230Hz" type="range" min="0" max="100" value="66" aria-label="230 hertz equalizer band" />
                 <span class="text-xs font-medium">+4</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">910Hz</span>
-                <input class="slider eq-slider" data-eq="910Hz" type="range" min="0" max="100" value="58" />
+                <input class="slider eq-slider" data-eq="910Hz" type="range" min="0" max="100" value="58" aria-label="910 hertz equalizer band" />
                 <span class="text-xs font-medium">+1</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">4kHz</span>
-                <input class="slider eq-slider" data-eq="4kHz" type="range" min="0" max="100" value="62" />
+                <input class="slider eq-slider" data-eq="4kHz" type="range" min="0" max="100" value="62" aria-label="4 kilohertz equalizer band" />
                 <span class="text-xs font-medium">+3</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">14kHz</span>
-                <input class="slider eq-slider" data-eq="14kHz" type="range" min="0" max="100" value="70" />
+                <input class="slider eq-slider" data-eq="14kHz" type="range" min="0" max="100" value="70" aria-label="14 kilohertz equalizer band" />
                 <span class="text-xs font-medium">+6</span>
               </label>
             </div>
@@ -551,7 +551,6 @@
         updateSliderFill(progressSlider);
         updateSliderFill(volumeSlider);
         recalcMetrics();
-        recalcMetrics();
       }
 
       function applyPreset(name, shouldNotify = true) {
@@ -579,7 +578,7 @@
         link.href = url;
         link.download = "solid-disco-config.json";
         link.click();
-        URL.revokeObjectURL(url);
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
         showToast("Config exported");
       }
 
