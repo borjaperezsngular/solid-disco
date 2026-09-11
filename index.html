@@ -14,8 +14,16 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.12/dist/index.global.js"
+      integrity="sha384-LqBwoe0BcnbLWlaQKZjZo/kDoE/3vuU2CKdZ2Qx5LRUCF1sMAkb8j8jQY5QFgg6U"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/lucide@0.542.0/dist/umd/lucide.min.js"
+      integrity="sha384-TNfplqKj5j5vXPfD9WVi9CLTDFI8iOx7+dbb1jRJD4K6phG1lw/MCYz2K/siy0FW"
+      crossorigin="anonymous"
+    ></script>
     <style>
       :root {
         color-scheme: dark;
@@ -220,7 +228,9 @@
               </div>
             </div>
             <div class="rounded-xl border p-3" style="border-color: var(--border); background: rgba(2, 6, 23, 0.28)">
-              <canvas id="visualizer" class="h-[340px] w-full rounded-xl"></canvas>
+              <canvas id="visualizer" class="h-[340px] w-full rounded-xl" role="img" aria-label="Animated audio spectrum visualizer preview">
+                Your browser does not support the canvas visualizer preview.
+              </canvas>
             </div>
           </article>
 
@@ -530,6 +540,7 @@
         trackTitle.textContent = preset.title;
         trackMeta.textContent = `${state.preset} preset · Visual engine synced`;
         playButton.setAttribute("aria-label", state.playing ? "Pause" : "Play");
+        playButton.setAttribute("aria-pressed", String(state.playing));
         playButton.innerHTML = state.playing
           ? '<i data-lucide="pause" class="h-5 w-5"></i>'
           : '<i data-lucide="play" class="h-5 w-5"></i>';
@@ -541,6 +552,7 @@
         fxButtons.forEach((button) => {
           const enabled = state[button.dataset.fx];
           button.dataset.active = String(enabled);
+          button.setAttribute("aria-pressed", String(enabled));
         });
 
         eqSliders.forEach((slider) => {
@@ -577,8 +589,13 @@
         const link = document.createElement("a");
         link.href = url;
         link.download = "solid-disco-config.json";
+        link.style.display = "none";
+        document.body.appendChild(link);
         link.click();
-        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+        window.setTimeout(() => {
+          URL.revokeObjectURL(url);
+          link.remove();
+        }, 0);
         showToast("Config exported");
       }
 
