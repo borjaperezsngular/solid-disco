@@ -705,7 +705,7 @@
 
       progressSlider.addEventListener("input", (event) => {
         event.target.max = String(state.duration);
-        event.target.value = String(Math.min(Number(event.target.value), state.duration));
+        event.target.value = String(Math.round(Math.min(Number(event.target.value), state.duration)));
         state.progress = Number(event.target.value);
         updateSliderFill(event.target);
         currentTimeEl.textContent = formatTime(state.progress);
@@ -735,7 +735,8 @@
         slider.addEventListener("input", (event) => {
           state.eq[event.target.dataset.eq] = Number(event.target.value);
           updateSliderFill(event.target);
-          updateUI();
+          event.target.closest("label").querySelector("[data-eq-value]").textContent = `${Math.round((state.eq[event.target.dataset.eq] - 50) / 3) >= 0 ? "+" : ""}${Math.round((state.eq[event.target.dataset.eq] - 50) / 3)}`;
+          recalcMetrics();
         });
       });
 
