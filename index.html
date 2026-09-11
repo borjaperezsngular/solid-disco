@@ -138,6 +138,18 @@
         animation: toast-in 220ms ease-out;
       }
 
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       html:not(.dark) .toast {
         background: rgba(255, 255, 255, 0.96);
         color: #0f172a;
@@ -380,6 +392,7 @@
     </div>
 
     <div id="toastContainer" class="pointer-events-none fixed bottom-5 right-5 z-50 flex w-full max-w-sm flex-col gap-3 px-4"></div>
+    <div id="liveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
     <script>
       const root = document.documentElement;
@@ -399,6 +412,7 @@
       const trackTitle = document.getElementById("trackTitle");
       const trackMeta = document.getElementById("trackMeta");
       const toastContainer = document.getElementById("toastContainer");
+      const liveRegion = document.getElementById("liveRegion");
       const segmentedButtons = Array.from(document.querySelectorAll(".segmented-button"));
       const fxButtons = Array.from(document.querySelectorAll(".fx-toggle"));
       const eqSliders = Array.from(document.querySelectorAll(".eq-slider"));
@@ -464,6 +478,13 @@
         }
       }
 
+      function renderLucideIcon(target, iconName, className) {
+        const icon = document.createElement("i");
+        icon.dataset.lucide = iconName;
+        icon.className = className;
+        target.replaceChildren(icon);
+      }
+
       function resizeCanvas() {
         const ratio = window.devicePixelRatio || 1;
         const { width, height } = canvas.getBoundingClientRect();
@@ -497,13 +518,8 @@
         const toast = document.createElement("div");
         toast.className = "toast pointer-events-auto rounded-xl px-4 py-3 text-sm font-medium";
         toast.textContent = message;
-        if (announce) {
-          toast.setAttribute("role", "status");
-          toast.setAttribute("aria-live", "polite");
-          toast.setAttribute("aria-atomic", "true");
-        } else {
-          toast.setAttribute("aria-hidden", "true");
-        }
+        toast.setAttribute("aria-hidden", "true");
+        liveRegion.textContent = announce ? message : "";
         toastContainer.appendChild(toast);
         window.setTimeout(() => {
           toast.style.opacity = "0";
@@ -587,12 +603,8 @@
         playButton.setAttribute("aria-pressed", String(state.playing));
         themeToggle.setAttribute("aria-pressed", String(root.classList.contains("dark")));
         themeToggle.setAttribute("aria-label", root.classList.contains("dark") ? "Switch to light theme" : "Switch to dark theme");
-        themeToggle.innerHTML = root.classList.contains("dark")
-          ? '<i data-lucide="sun-medium" class="h-4 w-4"></i>'
-          : '<i data-lucide="moon-star" class="h-4 w-4"></i>';
-        playButton.innerHTML = state.playing
-          ? '<i data-lucide="pause" class="h-5 w-5"></i>'
-          : '<i data-lucide="play" class="h-5 w-5"></i>';
+        renderLucideIcon(themeToggle, root.classList.contains("dark") ? "sun-medium" : "moon-star", "h-4 w-4");
+        renderLucideIcon(playButton, state.playing ? "pause" : "play", "h-5 w-5");
 
         segmentedButtons.forEach((button) => {
           const active = button.dataset.preset === state.preset;
