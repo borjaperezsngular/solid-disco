@@ -527,7 +527,7 @@
         });
       }
 
-      function recalcMetrics(time = performance.now() / 1000) {
+      function computeMetrics(time = performance.now() / 1000) {
         const preset = presets[state.preset];
         const eqValues = Object.values(state.eq);
         const eqAverage = eqValues.reduce((sum, value) => sum + value, 0) / eqValues.length;
@@ -542,14 +542,20 @@
           Math.min(100, Math.round(state.volume * 0.68 + eqAverage * 0.24 + (state.playing ? 12 : 0) + pulse * 6))
         );
 
-        bpmMetric.textContent = `${bpm}`;
-        peakMetric.textContent = `${peak.toFixed(1)}kHz`;
-        outputMetric.textContent = `${output}%`;
+        return { bpm, peak, output };
+      }
 
-        metricHistoryPush("bpm", bpm);
-        metricHistoryPush("peak", peak);
-        metricHistoryPush("output", output);
-        updateSparklines();
+      function renderMetrics(metrics, recordHistory = false) {
+        bpmMetric.textContent = `${metrics.bpm}`;
+        peakMetric.textContent = `${metrics.peak.toFixed(1)}kHz`;
+        outputMetric.textContent = `${metrics.output}%`;
+
+        if (recordHistory) {
+          metricHistoryPush("bpm", metrics.bpm);
+          metricHistoryPush("peak", metrics.peak);
+          metricHistoryPush("output", metrics.output);
+          updateSparklines();
+        }
       }
 
       function updateUI() {
@@ -587,7 +593,7 @@
         });
         updateSliderFill(progressSlider);
         updateSliderFill(volumeSlider);
-        recalcMetrics();
+        renderMetrics(computeMetrics(), false);
         refreshIcons();
       }
 
@@ -704,9 +710,9 @@
           currentTimeEl.textContent = formatTime(state.progress);
           progressSlider.value = String(state.progress);
           updateSliderFill(progressSlider);
-          recalcMetrics(timestamp / 1000);
+          renderMetrics(computeMetrics(timestamp / 1000), true);
         } else if (state.metrics.bpm.size < 2) {
-          recalcMetrics(timestamp / 1000);
+          renderMetrics(computeMetrics(timestamp / 1000), true);
         }
 
         drawVisualizer(timestamp);
@@ -723,9 +729,7 @@
         event.target.max = String(state.duration);
         event.target.value = String(Math.round(Math.min(Number(event.target.value), state.duration)));
         state.progress = Number(event.target.value);
-        updateSliderFill(event.target);
-        currentTimeEl.textContent = formatTime(state.progress);
-        recalcMetrics();
+        updateUI();
       });
 
       volumeSlider.addEventListener("input", (event) => {
@@ -752,7 +756,7 @@
           state.eq[event.target.dataset.eq] = Number(event.target.value);
           updateSliderFill(event.target);
           event.target.closest("label").querySelector("[data-eq-value]").textContent = formatEqValue(state.eq[event.target.dataset.eq]);
-          recalcMetrics();
+          renderMetrics(computeMetrics(), false);
         });
       });
 
