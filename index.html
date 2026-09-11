@@ -271,10 +271,10 @@
                   </div>
 
                   <div class="flex flex-wrap gap-3">
-                    <button class="fx-toggle rounded-full border px-4 py-2 text-sm font-medium transition" data-fx="bass" data-active="true" style="border-color: var(--border)">
+                    <button class="fx-toggle rounded-full border px-4 py-2 text-sm font-medium transition" data-fx="bass" data-active="true" aria-pressed="true" style="border-color: var(--border)">
                       Bass Boost
                     </button>
-                    <button class="fx-toggle rounded-full border px-4 py-2 text-sm font-medium transition" data-fx="spatial" data-active="false" style="border-color: var(--border)">
+                    <button class="fx-toggle rounded-full border px-4 py-2 text-sm font-medium transition" data-fx="spatial" data-active="false" aria-pressed="false" style="border-color: var(--border)">
                       Spatial 3D
                     </button>
                   </div>
@@ -412,6 +412,7 @@
         Disco: {
           title: "Neon Cascade",
           bpm: 124,
+          duration: 168,
           frequency: 8.2,
           intensity: 1.05,
           hue: ["#6366F1", "#10B981", "#F59E0B"],
@@ -420,6 +421,7 @@
         Electro: {
           title: "Static Mirage",
           bpm: 132,
+          duration: 154,
           frequency: 10.6,
           intensity: 1.25,
           hue: ["#22D3EE", "#6366F1", "#8B5CF6"],
@@ -428,6 +430,7 @@
         Chill: {
           title: "Blue Current",
           bpm: 96,
+          duration: 196,
           frequency: 6.4,
           intensity: 0.78,
           hue: ["#10B981", "#38BDF8", "#6366F1"],
@@ -452,6 +455,7 @@
       };
 
       let lastFrame = performance.now();
+      let lastMetricSampleAt = 0;
       let canvasSize = { width: 0, height: 0, ratio: 1 };
 
       function refreshIcons() {
@@ -617,7 +621,7 @@
         const preset = presets[name];
         state.preset = name;
         state.eq = { ...preset.eq };
-        state.duration = name === "Chill" ? 196 : name === "Electro" ? 154 : 168;
+        state.duration = preset.duration;
         state.progress = Math.min(state.progress, state.duration);
         updateUI();
         if (shouldNotify) showToast(`${name} preset applied`, true);
@@ -730,9 +734,12 @@
           currentTimeEl.textContent = formatTime(state.progress);
           progressSlider.value = String(state.progress);
           updateSliderFill(progressSlider);
-          renderMetrics(computeMetrics(timestamp / 1000), true);
+          const shouldSampleMetrics = timestamp - lastMetricSampleAt >= 180;
+          renderMetrics(computeMetrics(timestamp / 1000), shouldSampleMetrics);
+          if (shouldSampleMetrics) lastMetricSampleAt = timestamp;
         } else if (state.metrics.bpm.size < 2) {
           renderMetrics(computeMetrics(timestamp / 1000), true);
+          lastMetricSampleAt = timestamp;
         }
 
         drawVisualizer(timestamp);
