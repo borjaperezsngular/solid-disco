@@ -1000,6 +1000,7 @@
           state.eq[event.target.dataset.eq] = Number(event.target.value);
           updateSliderFill(event.target);
           event.target.closest("label").querySelector("[data-eq-value]").textContent = formatEqValue(state.eq[event.target.dataset.eq]);
+          syncAudioSettings();
           renderMetrics(computeMetrics(), false);
         });
       });
