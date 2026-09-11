@@ -121,12 +121,9 @@
       }
 
       .eq-slider {
-        writing-mode: bt-lr;
-        -webkit-appearance: slider-vertical;
-        appearance: slider-vertical;
-        width: 6px;
-        height: 180px;
-        padding: 0;
+        width: 140px;
+        transform: rotate(-90deg);
+        transform-origin: center;
       }
 
       .toast {
@@ -338,28 +335,38 @@
             <div class="grid grid-cols-5 gap-3">
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">60Hz</span>
-                <input class="slider eq-slider" data-eq="60Hz" type="range" min="0" max="100" value="78" aria-label="60 hertz equalizer band" />
-                <span class="text-xs font-medium">+8</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="60Hz" type="range" min="0" max="100" value="78" aria-label="60 hertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+8</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">230Hz</span>
-                <input class="slider eq-slider" data-eq="230Hz" type="range" min="0" max="100" value="66" aria-label="230 hertz equalizer band" />
-                <span class="text-xs font-medium">+4</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="230Hz" type="range" min="0" max="100" value="66" aria-label="230 hertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+4</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">910Hz</span>
-                <input class="slider eq-slider" data-eq="910Hz" type="range" min="0" max="100" value="58" aria-label="910 hertz equalizer band" />
-                <span class="text-xs font-medium">+1</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="910Hz" type="range" min="0" max="100" value="58" aria-label="910 hertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+1</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">4kHz</span>
-                <input class="slider eq-slider" data-eq="4kHz" type="range" min="0" max="100" value="62" aria-label="4 kilohertz equalizer band" />
-                <span class="text-xs font-medium">+3</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="4kHz" type="range" min="0" max="100" value="62" aria-label="4 kilohertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+3</span>
               </label>
               <label class="flex flex-col items-center gap-3 rounded-xl border px-2 py-4" style="border-color: var(--border); background: rgba(148, 163, 184, 0.04)">
                 <span class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--text-secondary)">14kHz</span>
-                <input class="slider eq-slider" data-eq="14kHz" type="range" min="0" max="100" value="70" aria-label="14 kilohertz equalizer band" />
-                <span class="text-xs font-medium">+6</span>
+                <div class="flex h-44 items-center justify-center">
+                  <input class="slider eq-slider" data-eq="14kHz" type="range" min="0" max="100" value="70" aria-label="14 kilohertz equalizer band" />
+                </div>
+                <span class="text-xs font-medium" data-eq-value>+6</span>
               </label>
             </div>
           </section>
@@ -560,7 +567,7 @@
 
         eqSliders.forEach((slider) => {
           slider.value = state.eq[slider.dataset.eq];
-          slider.nextElementSibling.textContent = `${Math.round((state.eq[slider.dataset.eq] - 50) / 3) >= 0 ? "+" : ""}${Math.round((state.eq[slider.dataset.eq] - 50) / 3)}`;
+          slider.closest("label").querySelector("[data-eq-value]").textContent = `${Math.round((state.eq[slider.dataset.eq] - 50) / 3) >= 0 ? "+" : ""}${Math.round((state.eq[slider.dataset.eq] - 50) / 3)}`;
           updateSliderFill(slider);
         });
         updateSliderFill(progressSlider);
@@ -697,6 +704,8 @@
       });
 
       progressSlider.addEventListener("input", (event) => {
+        event.target.max = String(state.duration);
+        event.target.value = String(Math.min(Number(event.target.value), state.duration));
         state.progress = Number(event.target.value);
         updateSliderFill(event.target);
         currentTimeEl.textContent = formatTime(state.progress);
@@ -735,6 +744,7 @@
         themeToggle.innerHTML = root.classList.contains("dark")
           ? '<i data-lucide="moon-star" class="h-4 w-4"></i>'
           : '<i data-lucide="sun-medium" class="h-4 w-4"></i>';
+        updateUI();
         refreshIcons();
         showToast(`${root.classList.contains("dark") ? "Dark" : "Light"} theme active`);
       });
