@@ -244,6 +244,9 @@
             <div class="rounded-xl border p-3" style="border-color: var(--border); background: rgba(2, 6, 23, 0.28)">
               <canvas id="visualizer" class="h-[340px] w-full rounded-xl" aria-hidden="true" role="presentation" tabindex="-1"></canvas>
             </div>
+            <p id="visualizerStatus" class="mt-3 text-xs font-medium" style="color: var(--text-secondary)">
+              Visualizer idle · ready to react to playback and EQ changes
+            </p>
           </article>
 
           <article class="glass-card rounded-xl p-5 shadow-sm">
@@ -411,6 +414,7 @@
       const outputMetric = document.getElementById("outputMetric");
       const trackTitle = document.getElementById("trackTitle");
       const trackMeta = document.getElementById("trackMeta");
+      const visualizerStatus = document.getElementById("visualizerStatus");
       const toastContainer = document.getElementById("toastContainer");
       const liveRegion = document.getElementById("liveRegion");
       const segmentedButtons = Array.from(document.querySelectorAll(".segmented-button"));
@@ -599,6 +603,9 @@
         volumeValueEl.textContent = `${state.volume}%`;
         trackTitle.textContent = preset.title;
         trackMeta.textContent = `${state.preset} preset · Visual engine synced`;
+        visualizerStatus.textContent = state.playing
+          ? `${state.preset} visualizer active · ${state.volume}% output with ${state.bass ? "Bass Boost" : "flat bass"} and ${state.spatial ? "Spatial 3D enabled" : "stereo focus"}`
+          : `Visualizer idle · ${state.preset} preset ready at ${state.volume}% output`;
         playButton.setAttribute("aria-label", state.playing ? "Pause" : "Play");
         playButton.setAttribute("aria-pressed", String(state.playing));
         themeToggle.setAttribute("aria-pressed", String(root.classList.contains("dark")));
@@ -645,6 +652,8 @@
           {
             theme: root.classList.contains("dark") ? "dark" : "light",
             preset: state.preset,
+            progress: state.progress,
+            duration: state.duration,
             volume: state.volume,
             bass: state.bass,
             spatial: state.spatial,
@@ -804,7 +813,7 @@
       themeToggle.addEventListener("click", () => {
         root.classList.toggle("dark");
         updateUI();
-        showToast(`${root.classList.contains("dark") ? "Dark" : "Light"} theme active`);
+        showToast(`${root.classList.contains("dark") ? "Dark" : "Light"} theme active`, true);
       });
 
       exportButton.addEventListener("click", exportConfig);
