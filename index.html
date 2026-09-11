@@ -434,6 +434,11 @@
           frequency: 8.2,
           intensity: 1.05,
           hue: ["#6366F1", "#10B981", "#F59E0B"],
+          audio: {
+            frequencies: [110, 220, 329.63],
+            waveforms: ["sawtooth", "triangle", "sine"],
+            lowpass: 2800,
+          },
           eq: { "60Hz": 78, "230Hz": 66, "910Hz": 58, "4kHz": 62, "14kHz": 70 },
         },
         Electro: {
@@ -443,6 +448,11 @@
           frequency: 10.6,
           intensity: 1.25,
           hue: ["#22D3EE", "#6366F1", "#8B5CF6"],
+          audio: {
+            frequencies: [82.41, 164.81, 329.63],
+            waveforms: ["square", "sawtooth", "triangle"],
+            lowpass: 3600,
+          },
           eq: { "60Hz": 70, "230Hz": 54, "910Hz": 65, "4kHz": 76, "14kHz": 82 },
         },
         Chill: {
@@ -452,6 +462,11 @@
           frequency: 6.4,
           intensity: 0.78,
           hue: ["#10B981", "#38BDF8", "#6366F1"],
+          audio: {
+            frequencies: [130.81, 196, 261.63],
+            waveforms: ["sine", "triangle", "sine"],
+            lowpass: 1900,
+          },
           eq: { "60Hz": 63, "230Hz": 61, "910Hz": 59, "4kHz": 52, "14kHz": 48 },
         },
       };
@@ -475,6 +490,20 @@
       let lastFrame = performance.now();
       let lastMetricSampleAt = 0;
       let canvasSize = { width: 0, height: 0, ratio: 1 };
+      const audioState = {
+        context: null,
+        mixGain: null,
+        masterGain: null,
+        bassFilter: null,
+        lowpassFilter: null,
+        panner: null,
+        lfo: null,
+        lfoGain: null,
+        oscillators: [],
+        voiceGains: [],
+        eqFilters: {},
+        pauseTimeout: null,
+      };
 
       function refreshIcons() {
         if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -516,6 +545,168 @@
         const value = Number(input.value);
         const fill = ((value - min) / (max - min)) * 100;
         input.style.setProperty("--fill", `${fill}%`);
+      }
+
+      function createEqFilter(context, type, frequency, q = 1) {
+        const filter = context.createBiquadFilter();
+        filter.type = type;
+        filter.frequency.value = frequency;
+        filter.Q.value = q;
+        return filter;
+      }
+
+      function ensureAudioEngine() {
+        if (audioState.context || !(window.AudioContext || window.webkitAudioContext)) return true;
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const context = new AudioCtx();
+        const mixGain = context.createGain();
+        const bassFilter = createEqFilter(context, "lowshelf", 180, 0.7);
+        const eqFilters = {
+          "60Hz": createEqFilter(context, "peaking", 60, 1.1),
+          "230Hz": createEqFilter(context, "peaking", 230, 1),
+          "910Hz": createEqFilter(context, "peaking", 910, 1),
+          "4kHz": createEqFilter(context, "peaking", 4000, 1),
+          "14kHz": createEqFilter(context, "highshelf", 14000, 0.7),
+        };
+        const lowpassFilter = createEqFilter(context, "lowpass", presets[state.preset].audio.lowpass, 0.8);
+        const panner = context.createStereoPanner();
+        const masterGain = context.createGain();
+        const lfo = context.createOscillator();
+        const lfoGain = context.createGain();
+
+        mixGain.gain.value = 0.85;
+        masterGain.gain.value = 0;
+        panner.pan.value = 0;
+        lfo.type = "sine";
+        lfo.frequency.value = 0.18;
+        lfoGain.gain.value = 0;
+
+        mixGain.connect(bassFilter);
+        bassFilter.connect(eqFilters["60Hz"]);
+        eqFilters["60Hz"].connect(eqFilters["230Hz"]);
+        eqFilters["230Hz"].connect(eqFilters["910Hz"]);
+        eqFilters["910Hz"].connect(eqFilters["4kHz"]);
+        eqFilters["4kHz"].connect(eqFilters["14kHz"]);
+        eqFilters["14kHz"].connect(lowpassFilter);
+        lowpassFilter.connect(panner);
+        panner.connect(masterGain);
+        masterGain.connect(context.destination);
+        lfo.connect(lfoGain);
+        lfoGain.connect(panner.pan);
+
+        const oscillators = [];
+        const voiceGains = [];
+        presets[state.preset].audio.frequencies.forEach((frequency, index) => {
+          const oscillator = context.createOscillator();
+          const voiceGain = context.createGain();
+          oscillator.frequency.value = frequency;
+          oscillator.type = presets[state.preset].audio.waveforms[index] || "sine";
+          voiceGain.gain.value = index === 0 ? 0.08 : index === 1 ? 0.05 : 0.035;
+          oscillator.connect(voiceGain);
+          voiceGain.connect(mixGain);
+          oscillator.start();
+          oscillators.push(oscillator);
+          voiceGains.push(voiceGain);
+        });
+
+        lfo.start();
+
+        Object.assign(audioState, {
+          context,
+          mixGain,
+          masterGain,
+          bassFilter,
+          lowpassFilter,
+          panner,
+          lfo,
+          lfoGain,
+          oscillators,
+          voiceGains,
+          eqFilters,
+        });
+
+        syncAudioSettings(true);
+        return true;
+      }
+
+      function syncAudioSettings(forceResume = false) {
+        if (!audioState.context) return;
+
+        const preset = presets[state.preset];
+        const now = audioState.context.currentTime;
+        const outputGain = Math.max(0.001, (state.volume / 100) * 0.18);
+
+        audioState.bassFilter.gain.setTargetAtTime(state.bass ? 8 : 0, now, 0.08);
+        audioState.lowpassFilter.frequency.setTargetAtTime(
+          preset.audio.lowpass + (state.spatial ? 450 : 0),
+          now,
+          0.12
+        );
+        audioState.lowpassFilter.Q.setTargetAtTime(state.spatial ? 1.1 : 0.8, now, 0.12);
+        audioState.lfo.frequency.setTargetAtTime((preset.bpm / 60) * 0.35, now, 0.2);
+        audioState.lfoGain.gain.setTargetAtTime(state.spatial ? 0.4 : 0, now, 0.16);
+        audioState.masterGain.gain.setTargetAtTime(state.playing ? outputGain : 0.0001, now, state.playing ? 0.08 : 0.05);
+
+        Object.entries(audioState.eqFilters).forEach(([band, filter]) => {
+          const sliderValue = Number(state.eq[band] ?? 50);
+          const gain = (sliderValue - 50) * 0.32;
+          filter.gain.setTargetAtTime(gain, now, 0.12);
+        });
+
+        preset.audio.frequencies.forEach((frequency, index) => {
+          const oscillator = audioState.oscillators[index];
+          if (!oscillator) return;
+          oscillator.type = preset.audio.waveforms[index] || oscillator.type;
+          oscillator.frequency.setTargetAtTime(
+            frequency * (state.spatial && index === 1 ? 1.01 : 1),
+            now,
+            0.12
+          );
+        });
+
+        if ((state.playing || forceResume) && audioState.context.state === "suspended") {
+          audioState.context.resume().catch(() => {});
+        }
+      }
+
+      function updateAudioMotion(timeSeconds) {
+        if (!audioState.context || audioState.context.state !== "running") return;
+        const preset = presets[state.preset];
+        const beat = (preset.bpm / 60) * timeSeconds;
+        const pulse = (Math.sin(beat * Math.PI * 2) + 1) / 2;
+        const eqValues = Object.values(state.eq);
+        const eqAverage = eqValues.reduce((sum, value) => sum + value, 0) / eqValues.length / 100;
+
+        audioState.voiceGains.forEach((voiceGain, index) => {
+          const baseLevel = index === 0 ? 0.07 : index === 1 ? 0.045 : 0.03;
+          const motion = index === 0 ? pulse : index === 1 ? 1 - pulse * 0.35 : 0.65 + Math.sin(timeSeconds * 1.7) * 0.08;
+          const target = (baseLevel + eqAverage * 0.03 + (state.bass && index === 0 ? 0.025 : 0)) * motion;
+          voiceGain.gain.setTargetAtTime(target, audioState.context.currentTime, 0.06);
+        });
+      }
+
+      function handlePlaybackAudio() {
+        if (!ensureAudioEngine()) {
+          showToast("Audio playback is not supported in this browser", true);
+          state.playing = false;
+          updateUI();
+          return;
+        }
+
+        window.clearTimeout(audioState.pauseTimeout);
+        syncAudioSettings(true);
+
+        if (!state.playing) {
+          const pauseAt = audioState.context.currentTime + 0.12;
+          audioState.masterGain.gain.cancelScheduledValues(audioState.context.currentTime);
+          audioState.masterGain.gain.setTargetAtTime(0.0001, audioState.context.currentTime, 0.05);
+          audioState.pauseTimeout = window.setTimeout(() => {
+            if (audioState.context && !state.playing && audioState.context.state === "running") {
+              audioState.context.suspend().catch(() => {});
+            }
+          }, Math.max(80, (pauseAt - audioState.context.currentTime) * 1000));
+        }
       }
 
       function showToast(message, announce = false) {
@@ -633,6 +824,7 @@
         updateSliderFill(progressSlider);
         updateSliderFill(volumeSlider);
         renderMetrics(computeMetrics(), false);
+        syncAudioSettings();
         refreshIcons();
       }
 
@@ -759,6 +951,7 @@
           const shouldSampleMetrics = timestamp - lastMetricSampleAt >= 180;
           renderMetrics(computeMetrics(timestamp / 1000), shouldSampleMetrics);
           if (shouldSampleMetrics) lastMetricSampleAt = timestamp;
+          updateAudioMotion(timestamp / 1000);
         } else if (state.metrics.bpm.size < 2) {
           renderMetrics(computeMetrics(timestamp / 1000), true);
           lastMetricSampleAt = timestamp;
@@ -770,6 +963,7 @@
 
       playButton.addEventListener("click", () => {
         state.playing = !state.playing;
+        handlePlaybackAudio();
         updateUI();
         showToast(state.playing ? "Playback started" : "Playback paused", true);
       });
