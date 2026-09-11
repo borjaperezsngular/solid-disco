@@ -379,7 +379,7 @@
       </main>
     </div>
 
-    <div id="toastContainer" class="pointer-events-none fixed bottom-5 right-5 z-50 flex w-full max-w-sm flex-col gap-3 px-4" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="toastContainer" class="pointer-events-none fixed bottom-5 right-5 z-50 flex w-full max-w-sm flex-col gap-3 px-4"></div>
 
     <script>
       const root = document.documentElement;
@@ -489,10 +489,17 @@
         input.style.setProperty("--fill", `${fill}%`);
       }
 
-      function showToast(message) {
+      function showToast(message, announce = false) {
         const toast = document.createElement("div");
         toast.className = "toast pointer-events-auto rounded-xl px-4 py-3 text-sm font-medium";
         toast.textContent = message;
+        if (announce) {
+          toast.setAttribute("role", "status");
+          toast.setAttribute("aria-live", "polite");
+          toast.setAttribute("aria-atomic", "true");
+        } else {
+          toast.setAttribute("aria-hidden", "true");
+        }
         toastContainer.appendChild(toast);
         window.setTimeout(() => {
           toast.style.opacity = "0";
@@ -610,14 +617,18 @@
         state.duration = name === "Chill" ? 196 : name === "Electro" ? 154 : 168;
         state.progress = Math.min(state.progress, state.duration);
         updateUI();
-        if (shouldNotify) showToast(`${name} preset applied`);
+        if (shouldNotify) showToast(`${name} preset applied`, true);
       }
 
       function exportConfig() {
         const payload = JSON.stringify(
           {
             theme: root.classList.contains("dark") ? "dark" : "light",
-            ...state,
+            preset: state.preset,
+            volume: state.volume,
+            bass: state.bass,
+            spatial: state.spatial,
+            eq: state.eq,
           },
           null,
           2
@@ -728,7 +739,7 @@
       playButton.addEventListener("click", () => {
         state.playing = !state.playing;
         updateUI();
-        showToast(state.playing ? "Playback started" : "Playback paused");
+        showToast(state.playing ? "Playback started" : "Playback paused", true);
       });
 
       progressSlider.addEventListener("input", (event) => {
@@ -753,7 +764,7 @@
           const key = button.dataset.fx;
           state[key] = !state[key];
           updateUI();
-          showToast(`${button.textContent.trim()} ${state[key] ? "enabled" : "disabled"}`);
+          showToast(`${button.textContent.trim()} ${state[key] ? "enabled" : "disabled"}`, true);
         });
       });
 
