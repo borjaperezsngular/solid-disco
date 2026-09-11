@@ -228,9 +228,7 @@
               </div>
             </div>
             <div class="rounded-xl border p-3" style="border-color: var(--border); background: rgba(2, 6, 23, 0.28)">
-              <canvas id="visualizer" class="h-[340px] w-full rounded-xl" role="img" aria-label="Animated audio spectrum visualizer preview">
-                Your browser does not support the canvas visualizer preview.
-              </canvas>
+              <canvas id="visualizer" class="h-[340px] w-full rounded-xl" aria-hidden="true"></canvas>
             </div>
           </article>
 
@@ -442,6 +440,7 @@
       };
 
       let lastFrame = performance.now();
+      let canvasSize = { width: 0, height: 0, ratio: 1 };
 
       function refreshIcons() {
         if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -452,8 +451,10 @@
       function resizeCanvas() {
         const ratio = window.devicePixelRatio || 1;
         const { width, height } = canvas.getBoundingClientRect();
+        canvasSize = { width, height, ratio };
         canvas.width = Math.floor(width * ratio);
         canvas.height = Math.floor(height * ratio);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       }
 
@@ -541,6 +542,8 @@
         trackMeta.textContent = `${state.preset} preset · Visual engine synced`;
         playButton.setAttribute("aria-label", state.playing ? "Pause" : "Play");
         playButton.setAttribute("aria-pressed", String(state.playing));
+        themeToggle.setAttribute("aria-pressed", String(root.classList.contains("dark")));
+        themeToggle.setAttribute("aria-label", root.classList.contains("dark") ? "Switch to light theme" : "Switch to dark theme");
         playButton.innerHTML = state.playing
           ? '<i data-lucide="pause" class="h-5 w-5"></i>'
           : '<i data-lucide="play" class="h-5 w-5"></i>';
@@ -601,9 +604,11 @@
 
       function drawVisualizer(timestamp) {
         const time = timestamp / 1000;
-        const width = canvas.clientWidth;
-        const height = canvas.clientHeight;
+        const { width, height, ratio } = canvasSize;
 
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
 
         const gradient = ctx.createLinearGradient(0, 0, width, height);
