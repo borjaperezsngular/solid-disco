@@ -242,7 +242,7 @@
               </div>
             </div>
             <div class="rounded-xl border p-3" style="border-color: var(--border); background: rgba(2, 6, 23, 0.28)">
-              <canvas id="visualizer" class="h-[340px] w-full rounded-xl" aria-hidden="true"></canvas>
+              <canvas id="visualizer" class="h-[340px] w-full rounded-xl" aria-hidden="true" role="presentation" tabindex="-1"></canvas>
             </div>
           </article>
 
@@ -631,6 +631,7 @@
 
       function applyPreset(name, shouldNotify = true) {
         const preset = presets[name];
+        if (!preset) return;
         state.preset = name;
         state.eq = { ...preset.eq };
         state.duration = preset.duration;
@@ -784,6 +785,7 @@
       fxButtons.forEach((button) => {
         button.addEventListener("click", () => {
           const key = button.dataset.fx;
+          if (!["bass", "spatial"].includes(key)) return;
           state[key] = !state[key];
           updateUI();
           showToast(`${button.textContent.trim()} ${state[key] ? "enabled" : "disabled"}`, true);
