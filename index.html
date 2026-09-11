@@ -195,9 +195,10 @@
               id="themeToggle"
               class="glass-card inline-flex items-center justify-center rounded-full p-3 transition hover:scale-[1.02]"
               type="button"
-              aria-label="Toggle theme"
+              aria-label="Switch to light theme"
+              aria-pressed="true"
             >
-              <i data-lucide="moon-star" class="h-4 w-4"></i>
+              <i data-lucide="sun-medium" class="h-4 w-4"></i>
             </button>
 
             <button
@@ -440,9 +441,9 @@
         spatial: false,
         eq: { ...presets.Disco.eq },
         metrics: {
-          bpm: [],
-          peak: [],
-          output: [],
+          bpm: { values: new Array(16), size: 0, cursor: 0, max: 16 },
+          peak: { values: new Array(16), size: 0, cursor: 0, max: 16 },
+          output: { values: new Array(16), size: 0, cursor: 0, max: 16 },
         },
       };
 
@@ -492,15 +493,24 @@
         window.setTimeout(() => toast.remove(), 2400);
       }
 
+      function getMetricSamples(key) {
+        const history = state.metrics[key];
+        if (history.size < history.max) {
+          return history.values.slice(0, history.size);
+        }
+        return history.values.slice(history.cursor).concat(history.values.slice(0, history.cursor));
+      }
+
       function metricHistoryPush(key, value, max = 16) {
         const history = state.metrics[key];
-        history.push(value);
-        if (history.length > max) history.shift();
+        history.values[history.cursor] = value;
+        history.cursor = (history.cursor + 1) % max;
+        history.size = Math.min(history.size + 1, max);
       }
 
       function updateSparklines() {
         Object.entries(sparkRefs).forEach(([key, node]) => {
-          const points = state.metrics[key]
+          const points = getMetricSamples(key)
             .map((value, index, arr) => {
               const x = (index / Math.max(arr.length - 1, 1)) * 120;
               const normalized = key === "peak" ? value / 12 : value / 140;
@@ -689,7 +699,7 @@
           progressSlider.value = String(state.progress);
           updateSliderFill(progressSlider);
           recalcMetrics(timestamp / 1000);
-        } else if (state.metrics.bpm.length < 2) {
+        } else if (state.metrics.bpm.size < 2) {
           recalcMetrics(timestamp / 1000);
         }
 
@@ -743,8 +753,8 @@
       themeToggle.addEventListener("click", () => {
         root.classList.toggle("dark");
         themeToggle.innerHTML = root.classList.contains("dark")
-          ? '<i data-lucide="moon-star" class="h-4 w-4"></i>'
-          : '<i data-lucide="sun-medium" class="h-4 w-4"></i>';
+          ? '<i data-lucide="sun-medium" class="h-4 w-4"></i>'
+          : '<i data-lucide="moon-star" class="h-4 w-4"></i>';
         updateUI();
         refreshIcons();
         showToast(`${root.classList.contains("dark") ? "Dark" : "Light"} theme active`);
@@ -755,7 +765,7 @@
 
       resizeCanvas();
       applyPreset("Disco", false);
-      themeToggle.innerHTML = '<i data-lucide="moon-star" class="h-4 w-4"></i>';
+      themeToggle.innerHTML = '<i data-lucide="sun-medium" class="h-4 w-4"></i>';
       progressSlider.max = String(state.duration);
       updateUI();
       refreshIcons();
