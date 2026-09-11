@@ -583,6 +583,9 @@
         playButton.setAttribute("aria-pressed", String(state.playing));
         themeToggle.setAttribute("aria-pressed", String(root.classList.contains("dark")));
         themeToggle.setAttribute("aria-label", root.classList.contains("dark") ? "Switch to light theme" : "Switch to dark theme");
+        themeToggle.innerHTML = root.classList.contains("dark")
+          ? '<i data-lucide="sun-medium" class="h-4 w-4"></i>'
+          : '<i data-lucide="moon-star" class="h-4 w-4"></i>';
         playButton.innerHTML = state.playing
           ? '<i data-lucide="pause" class="h-5 w-5"></i>'
           : '<i data-lucide="play" class="h-5 w-5"></i>';
@@ -744,7 +747,7 @@
 
       progressSlider.addEventListener("input", (event) => {
         event.target.max = String(state.duration);
-        event.target.value = String(Math.round(Math.min(Number(event.target.value), state.duration)));
+        event.target.value = String(Math.min(Number(event.target.value), state.duration));
         state.progress = Number(event.target.value);
         updateUI();
       });
@@ -779,11 +782,7 @@
 
       themeToggle.addEventListener("click", () => {
         root.classList.toggle("dark");
-        themeToggle.innerHTML = root.classList.contains("dark")
-          ? '<i data-lucide="sun-medium" class="h-4 w-4"></i>'
-          : '<i data-lucide="moon-star" class="h-4 w-4"></i>';
         updateUI();
-        refreshIcons();
         showToast(`${root.classList.contains("dark") ? "Dark" : "Light"} theme active`);
       });
 
@@ -792,10 +791,8 @@
 
       resizeCanvas();
       applyPreset("Disco", false);
-      themeToggle.innerHTML = '<i data-lucide="sun-medium" class="h-4 w-4"></i>';
       progressSlider.max = String(state.duration);
       updateUI();
-      refreshIcons();
       requestAnimationFrame(animate);
     </script>
   </body>
