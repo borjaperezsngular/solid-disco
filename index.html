@@ -395,9 +395,9 @@
       const trackTitle = document.getElementById("trackTitle");
       const trackMeta = document.getElementById("trackMeta");
       const toastContainer = document.getElementById("toastContainer");
-      const segmentedButtons = [...document.querySelectorAll(".segmented-button")];
-      const fxButtons = [...document.querySelectorAll(".fx-toggle")];
-      const eqSliders = [...document.querySelectorAll(".eq-slider")];
+      const segmentedButtons = Array.from(document.querySelectorAll(".segmented-button"));
+      const fxButtons = Array.from(document.querySelectorAll(".fx-toggle"));
+      const eqSliders = Array.from(document.querySelectorAll(".eq-slider"));
       const sparkRefs = {
         bpm: document.getElementById("bpmSpark"),
         peak: document.getElementById("peakSpark"),
@@ -470,6 +470,11 @@
         const minutes = Math.floor(seconds / 60);
         const remainder = Math.floor(seconds % 60);
         return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+      }
+
+      function formatEqValue(value) {
+        const gain = Math.round((value - 50) / 3);
+        return `${gain >= 0 ? "+" : ""}${gain}`;
       }
 
       function updateSliderFill(input) {
@@ -577,12 +582,13 @@
 
         eqSliders.forEach((slider) => {
           slider.value = state.eq[slider.dataset.eq];
-          slider.closest("label").querySelector("[data-eq-value]").textContent = `${Math.round((state.eq[slider.dataset.eq] - 50) / 3) >= 0 ? "+" : ""}${Math.round((state.eq[slider.dataset.eq] - 50) / 3)}`;
+          slider.closest("label").querySelector("[data-eq-value]").textContent = formatEqValue(state.eq[slider.dataset.eq]);
           updateSliderFill(slider);
         });
         updateSliderFill(progressSlider);
         updateSliderFill(volumeSlider);
         recalcMetrics();
+        refreshIcons();
       }
 
       function applyPreset(name, shouldNotify = true) {
@@ -745,7 +751,7 @@
         slider.addEventListener("input", (event) => {
           state.eq[event.target.dataset.eq] = Number(event.target.value);
           updateSliderFill(event.target);
-          event.target.closest("label").querySelector("[data-eq-value]").textContent = `${Math.round((state.eq[event.target.dataset.eq] - 50) / 3) >= 0 ? "+" : ""}${Math.round((state.eq[event.target.dataset.eq] - 50) / 3)}`;
+          event.target.closest("label").querySelector("[data-eq-value]").textContent = formatEqValue(state.eq[event.target.dataset.eq]);
           recalcMetrics();
         });
       });
